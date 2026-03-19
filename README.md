@@ -28,6 +28,8 @@ The most valuable thing a developer does in an AI-assisted workflow isn't writin
 
 Both modes save structured markdown files to a `/decisions` directory. Claude fills in metadata (date, branch, files). You provide the reasoning. Always.
 
+Every entry gets an automatic **Reasoning Health Check** — a score from 1-10 and short flag tags that surface potential blind spots, unstated assumptions, or logical gaps in your reasoning. Three lines, no interruption. If a flag catches your eye, run `/why expand` to get the full breakdown appended to the entry.
+
 ## Why this matters
 
 An engineer's `/decisions` folder is a body of work that can't be faked. It shows:
@@ -95,18 +97,37 @@ decisions/
   2026-03-18-no-orm.md
 ```
 
-Over time, this folder becomes a searchable record of every meaningful technical decision in your project, with full reasoning attached.
+Over time, this folder becomes a searchable record of every meaningful technical decision in your project, with full reasoning and health scores attached.
+
+### Reasoning Health Check
+
+Every entry automatically gets:
+
+```
+Score: 8/10
+
+Flags: session-fixation(med), team-coupling(low)
+
+Run /why expand for details.
+```
+
+The score evaluates evidence specificity, unstated assumptions, blind spot severity, and confidence calibration. Flags are short tags with severity levels. No extra prompts, no interruption.
+
+### `/why expand`
+
+Want the full breakdown? Run `/why expand` and the detailed analysis gets appended to the most recent decision file — flag explanations, surfaced assumptions, blind spots, confidence notes. Lives with the decision permanently.
 
 ## Example entry
 
-See [examples/example-decision.md](examples/example-decision.md) for a complete entry showing a developer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning documented across all five questions.
+See [examples/example-decision.md](examples/example-decision.md) for a complete entry showing a developer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning and health check.
 
 ## Principles
 
 - **Claude fills metadata, never answers.** Questions are human-only.
 - **Quick is the default.** Auto-triggers ask one question. Full mode is opt-in via `/why`.
-- **No editorializing.** The skill records. It doesn't judge.
-- **Your words, verbatim.** Answers are stored exactly as written.
+- **Health check is automatic.** Score and flags on every entry. No extra prompts.
+- **Expand is opt-in.** Full breakdown only when you run `/why expand`.
+- **Your words, verbatim.** Answers are stored exactly as written, above the line. AI analysis lives below.
 
 ## License
 

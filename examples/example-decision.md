@@ -6,6 +6,8 @@ files:
   - src/auth/session.ts
   - src/auth/middleware.ts
 tags: [dependency, architecture, security]
+mode: full
+health_score: 8
 ---
 
 # Custom session handler over express-session
@@ -24,3 +26,12 @@ I wrote the entire session.ts file from scratch. I kept Claude's middleware stru
 
 ## 5. What would break this, and do you understand why?
 If we go multi-instance, sessions won't be shared between servers. I know this. The fix would be to move to Redis at that point, and the interface is clean enough that it's a one-file swap. If memory pressure becomes an issue with large session objects, the Map could grow unbounded between cleanup cycles. I've set a max session count of 500 with a hard reject after that, which is 2.5x our expected max. If we hit that, we have bigger problems.
+
+---
+## Reasoning Health Check (AI-generated)
+
+Score: 8/10
+
+Flags: session-fixation(med), team-coupling(low)
+
+Run `/why expand` for details.
