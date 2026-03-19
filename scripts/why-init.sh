@@ -45,12 +45,17 @@ done
 touch "$SKILL_DIR/decisions/.gitkeep"
 echo "  ✓ decisions/"
 
-# Copy stats script
+# Copy scripts
 mkdir -p "$TARGET/scripts"
 if [ -f "$REPO_DIR/scripts/why-stats.sh" ]; then
   cp "$REPO_DIR/scripts/why-stats.sh" "$TARGET/scripts/why-stats.sh"
   chmod +x "$TARGET/scripts/why-stats.sh"
   echo "  ✓ scripts/why-stats.sh"
+fi
+if [ -f "$REPO_DIR/scripts/why-digest.sh" ]; then
+  cp "$REPO_DIR/scripts/why-digest.sh" "$TARGET/scripts/why-digest.sh"
+  chmod +x "$TARGET/scripts/why-digest.sh"
+  echo "  ✓ scripts/why-digest.sh"
 fi
 
 # Copy example if it exists
@@ -71,6 +76,34 @@ if [[ "$ignore_choice" =~ ^[Yy]$ ]]; then
   echo "  ✓ Updated .gitignore — decisions excluded"
 else
   echo "  ✓ Decisions will be tracked in git"
+fi
+
+# Add /why context to CLAUDE.md so all Claude instances are decision-aware
+CLAUDE_MD="$TARGET/CLAUDE.md"
+WHY_SNIPPET='## /why — Team Decision Context
+
+When working in this project, be aware of the `decisions/` directory at `.claude/skills/why/decisions/`. It contains structured records of human technical decisions made during AI-assisted development.
+
+**Before suggesting an approach:** Check if a prior decision in `decisions/` already addressed the same system, files, or tradeoff. If so, reference it and build on it rather than re-litigating.
+
+**When a decision contradicts a prior one:** Surface it. "Note: this reverses the approach from decisions/2026-03-10-no-orm.md — is that intentional?"
+
+**Weekly digests:** Files matching `decisions/DIGEST-*.md` summarize team patterns. Read the most recent digest to understand recurring flags and team focus areas.
+
+**Decision stats:** Run `bash scripts/why-stats.sh .claude/skills/why/decisions` for analytics.'
+
+if [ -f "$CLAUDE_MD" ]; then
+  # Check if snippet already exists
+  if grep -q '/why — Team Decision Context' "$CLAUDE_MD" 2>/dev/null; then
+    echo "  — CLAUDE.md already has /why context"
+  else
+    echo "" >> "$CLAUDE_MD"
+    echo "$WHY_SNIPPET" >> "$CLAUDE_MD"
+    echo "  ✓ Updated CLAUDE.md with /why team context"
+  fi
+else
+  echo "$WHY_SNIPPET" > "$CLAUDE_MD"
+  echo "  ✓ Created CLAUDE.md with /why team context"
 fi
 
 echo ""

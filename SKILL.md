@@ -206,6 +206,32 @@ When the developer runs `/why expand`, find the most recent decision entry in `d
 
 Write this directly into the decision file, appended after the health check section.
 
+## Team context
+
+Before scoring a new decision, scan the `decisions/` directory for prior entries that relate to the same files, tags, or system area. If related decisions exist:
+
+1. **Reference them in the health check.** After the flags line, add: `Related: [YYYY-MM-DD-slug.md](decisions/YYYY-MM-DD-slug.md)` for up to 3 most relevant prior decisions.
+2. **Factor them into scoring.** If a prior decision established a constraint or tradeoff that the current decision builds on, note whether the developer is aware of it. If they contradict a prior decision without acknowledging it, flag `contradicts-prior(med)`.
+3. **Check for digest files.** Files matching `decisions/DIGEST-*.md` are weekly team summaries. Read the most recent digest to understand current team patterns and recurring flags before scoring.
+
+This makes every Claude instance in the project aware of the team's collective reasoning. Decisions don't happen in isolation — they build on each other.
+
+### Entry format addition
+
+When related decisions are found, add a `Related` line after the `Flags` line in the health check:
+
+```
+Score: 7/10
+
+Flags: unscoped-work(med)
+
+Related: [2026-03-10-api-contract.md], [2026-03-08-auth-middleware.md]
+
+Run `/why expand` for details.
+```
+
+If no related decisions exist, omit the `Related` line.
+
 ## Saving entries
 
 1. Generate a slug from the decision topic (lowercase, hyphens, no special chars)

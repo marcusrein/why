@@ -50,27 +50,31 @@ The installer creates this structure in your project:
 
 ```
 your-project/
+  CLAUDE.md                    # Updated with /why team context (created if missing)
   .claude/
     skills/
       why/
-        SKILL.md              # The skill Claude Code reads
-        decisions/             # Where entries land
+        SKILL.md               # The skill Claude Code reads
+        decisions/              # Where entries land
           .gitkeep
         rubrics/
-          default.md           # General-purpose scoring (4 dimensions, equal weights)
-          security-focused.md  # 5 dimensions, blind spots at 40%
-          startup-velocity.md  # 5 dimensions, evidence specificity at 40%
+          default.md            # General-purpose scoring (4 dimensions, equal weights)
+          security-focused.md   # 5 dimensions, blind spots at 40%
+          startup-velocity.md   # 5 dimensions, evidence specificity at 40%
         examples/
           example-decision.md
   scripts/
-    why-stats.sh               # Decision analytics (no dependencies, just bash)
+    why-stats.sh                # Decision analytics (no dependencies, just bash)
+    why-digest.sh               # Weekly team digest generator
 ```
+
+The installer also adds a `/why` context block to your project's `CLAUDE.md`. This makes every Claude instance in the project decision-aware — Claude will check for prior decisions before suggesting approaches, surface contradictions, and reference the team's collective reasoning.
 
 Decisions are tracked in git by default — they're the value. The installer asks if you want to exclude them instead.
 
 ### Manual install
 
-Copy the files yourself following the structure above. Claude Code picks up `SKILL.md` automatically from `.claude/skills/why/`.
+Copy the files yourself following the structure above. Claude Code picks up `SKILL.md` automatically from `.claude/skills/why/`. If installing manually, add the CLAUDE.md snippet from `scripts/why-init.sh` to make Claude instances decision-aware.
 
 ## Usage
 
@@ -132,17 +136,19 @@ health_score: 8
 
 ### Reasoning Health Check
 
-Every entry automatically gets a three-line health check below the developer's answers:
+Every entry automatically gets a health check below the developer's answers:
 
 ```
 Score: 8/10
 
 Flags: session-fixation(med), team-coupling(low)
 
+Related: [2026-03-12-auth-middleware.md]
+
 Run /why expand for details.
 ```
 
-The score is a weighted average across the active rubric's dimensions. Flags are short slugs with severity (`low`, `med`, `high`) that surface specific concerns. AI analysis never mixes into the developer's answers — it lives below a `---` separator.
+The score is a weighted average across the active rubric's dimensions. Flags are short slugs with severity (`low`, `med`, `high`) that surface specific concerns. The `Related:` line appears when prior decisions in `decisions/` touch the same files, tags, or system area — linking the team's reasoning together over time. If a decision contradicts a prior one without acknowledgment, it gets flagged with `contradicts-prior(med)`. AI analysis never mixes into the developer's answers — it lives below a `---` separator.
 
 ### `/why expand`
 
@@ -196,6 +202,46 @@ Every rubric includes a `Role calibration` section that adjusts which dimensions
 - **Junior** — Main signal: are they shipping or blocked trying to make it perfect?
 
 Role calibration adjusts which dimensions matter most, not the overall scoring bar.
+
+## Team coordination
+
+When multiple team members install `/why` in the same repo, their decisions sync through git. Every Claude instance becomes aware of the team's collective reasoning.
+
+### How it works
+
+1. **The installer adds context to CLAUDE.md.** Every Claude instance in the project reads this on startup. It tells Claude to check `decisions/` for prior reasoning before suggesting approaches.
+
+2. **Decisions cross-reference automatically.** When a new decision relates to files or tags from a prior entry, the health check includes a `Related:` line linking to those entries. If a decision contradicts a prior one without acknowledgment, it gets flagged with `contradicts-prior(med)`.
+
+3. **Weekly digests aggregate patterns.** Run `why-digest.sh` to generate a team summary that Claude instances can read for context.
+
+### Cross-instance awareness
+
+When Sarah makes a decision about the auth system on Monday and commits it, David's Claude instance can reference it on Wednesday:
+
+> "Note: Sarah decided to use in-memory sessions over Redis in [decisions/2026-03-15-custom-session-handler.md]. Your proposed change to add Redis would reverse that decision — is that intentional?"
+
+This happens because CLAUDE.md tells every Claude instance to check `decisions/` before suggesting approaches. No MCP server, no shared backend — just git and markdown.
+
+### Weekly digest
+
+Generate a team summary:
+
+```bash
+bash scripts/why-digest.sh .claude/skills/why/decisions
+```
+
+This creates `decisions/DIGEST-2026-W12.md` with:
+
+- Decision count, mode breakdown, average score
+- Table of all decisions with scores and roles
+- Recurring flags across the team
+- Participation by role with average scores
+- A "Patterns & observations" section for the team to fill in during retros
+
+Commit the digest so Claude instances can read it for team context.
+
+Arguments: `why-digest.sh [decisions-dir] [weeks-back]`. Defaults to `decisions/` and 1 week.
 
 ## Stats
 
@@ -263,6 +309,7 @@ See [examples/example-decision.md](examples/example-decision.md) for a complete 
 - **Rubrics are swappable.** Scoring adapts to what your team values.
 - **Role-aware scoring.** Declare your role or let it be inferred. The same rubric evaluates different roles at appropriate scope.
 - **Git is the database.** Everything is markdown files in your repo. No backend, no accounts, no infra.
+- **Team-aware by default.** Every Claude instance reads CLAUDE.md and checks prior decisions before suggesting approaches.
 
 ## Project structure
 
@@ -280,6 +327,7 @@ why/
     startup-velocity.md       # 5 dimensions, evidence at 40%
   scripts/
     why-stats.sh              # Decision analytics (bash, no deps)
+    why-digest.sh             # Weekly team digest generator
     why-init.sh               # One-command installer
   docs/
     custom-rubrics.md         # How to write your own rubric
