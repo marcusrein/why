@@ -26,60 +26,87 @@ The most valuable thing a developer does in an AI-assisted workflow isn't writin
 4. What parts of the output did you write or override yourself?
 5. What would break this, and do you understand why?
 
-Both modes save structured markdown files to a `decisions/` directory. Claude fills in metadata (date, branch, files, inferred role). You provide the reasoning. Always.
+Both modes save structured markdown files to a `decisions/` directory with full metadata: date, time, branch, files, tags, role, rubric used, mode, and health score. Claude fills in the metadata. You provide the reasoning. Always.
 
-Every entry gets an automatic **Reasoning Health Check** — a score from 1-10 and short flag tags that surface potential blind spots, unstated assumptions, or logical gaps in your reasoning. The scoring adapts to who's making the decision and what rubric your team uses. Run `/why expand` to get the full breakdown.
+Every entry gets an automatic **Reasoning Health Check** — a score from 1-10 and short flag tags that surface potential blind spots, unstated assumptions, or logical gaps in your reasoning. Scoring adapts to who's making the decision (role) and what rubric your team uses. Run `/why expand` to get the full breakdown appended to the entry.
 
 ## Install
 
-One command:
+### One command (recommended)
 
 ```bash
 git clone https://github.com/marcusrein/why.git /tmp/why-install
 bash /tmp/why-install/scripts/why-init.sh
 ```
 
-This creates `.claude/skills/why/` in your project with the skill, rubrics, decisions directory, and copies `scripts/why-stats.sh` for analytics. Decisions are tracked in git by default (recommended for team review).
+Or curl it:
 
-Or manually copy the skill:
+```bash
+curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh -o /tmp/why-init.sh
+bash /tmp/why-init.sh
+```
+
+The installer creates this structure in your project:
 
 ```
 your-project/
   .claude/
     skills/
       why/
-        SKILL.md
-        decisions/
+        SKILL.md              # The skill Claude Code reads
+        decisions/             # Where entries land
+          .gitkeep
         rubrics/
-          default.md
+          default.md           # General-purpose scoring (4 dimensions, equal weights)
+          security-focused.md  # 5 dimensions, blind spots at 40%
+          startup-velocity.md  # 5 dimensions, evidence specificity at 40%
         examples/
           example-decision.md
+  scripts/
+    why-stats.sh               # Decision analytics (no dependencies, just bash)
 ```
 
-That's it. Claude Code picks up `SKILL.md` automatically.
+Decisions are tracked in git by default — they're the value. The installer asks if you want to exclude them instead.
+
+### Manual install
+
+Copy the files yourself following the structure above. Claude Code picks up `SKILL.md` automatically from `.claude/skills/why/`.
 
 ## Usage
 
 ### Manual
 
-Type `/why` in Claude Code at any point to record a decision.
+Type `/why` in Claude Code to record a decision in full mode.
 
 ### Auto-trigger
 
-The skill activates automatically when you use phrases like:
+The skill activates in quick mode when you use override language:
 
 - "actually let's do..."
 - "I don't want to use..."
 - "instead let's..."
 - "I'd rather..."
-- "scratch that"
 - "let's go with..."
+- "override"
+- "scratch that"
+- "no, do it this way"
+- "forget that approach"
+- "I'm going to go with..."
 
-When Claude detects these patterns, it asks a single question: *What did you decide and why?* Quick and out of the way.
+Claude asks one question — *What did you decide and why?* — then saves the entry. Quick and out of the way.
+
+### Setting your role
+
+Role calibrates how the health check evaluates your reasoning. Set it explicitly:
+
+- Say "I'm a junior engineer" or "CTO here" in conversation
+- Run `/why role [role]` to set it for the session
+
+Valid roles: `cto`, `staff`, `senior`, `mid`, `junior`. If you don't set a role, Claude infers it from the scope of the decision. Explicit always wins over inferred.
 
 ### What gets created
 
-Each decision becomes a file in `decisions/`:
+Each decision becomes a timestamped markdown file:
 
 ```
 decisions/
@@ -89,9 +116,23 @@ decisions/
   2026-03-18-no-orm.md
 ```
 
+Entry frontmatter includes:
+
+```yaml
+date: 2026-03-15
+time: 14:32
+branch: feature/user-auth
+files: [src/auth/session.ts, src/auth/middleware.ts]
+tags: [dependency, architecture, security]
+role: senior
+rubric: default
+mode: full
+health_score: 8
+```
+
 ### Reasoning Health Check
 
-Every entry automatically gets:
+Every entry automatically gets a three-line health check below the developer's answers:
 
 ```
 Score: 8/10
@@ -101,47 +142,67 @@ Flags: session-fixation(med), team-coupling(low)
 Run /why expand for details.
 ```
 
-The score is based on your team's active rubric. The default evaluates evidence specificity, unstated assumptions, blind spot severity, and confidence calibration. Scoring calibrates to the scope of the decision — a CTO's architecture call is evaluated differently than a junior's library choice.
+The score is a weighted average across the active rubric's dimensions. Flags are short slugs with severity (`low`, `med`, `high`) that surface specific concerns. AI analysis never mixes into the developer's answers — it lives below a `---` separator.
 
 ### `/why expand`
 
-Run `/why expand` and the detailed analysis gets appended to the most recent decision file — flag explanations, surfaced assumptions, blind spots, confidence notes.
+Run `/why expand` and the detailed analysis gets appended to the most recent decision file:
+
+- **Flag breakdown** — one sentence per flag explaining what was detected
+- **Assumptions surfaced** — implicit assumptions stated explicitly
+- **Blind spots** — failure modes the developer didn't address
+- **Confidence calibration** — where certainty matched or exceeded evidence
 
 ## Rubrics
 
-Rubrics define how decisions are scored. Ships with three:
+Rubrics define how decisions are scored. Each rubric has weighted dimensions and role-specific calibration guidance. Ships with three:
 
-| Rubric | Optimizes for | Key weight |
-|--------|--------------|------------|
-| `default` | General-purpose reasoning | Equal weights |
-| `security-focused` | Security posture | Blind spots at 40% |
-| `startup-velocity` | Speed and pragmatism | Evidence specificity at 40% |
+| Rubric | Optimizes for | Dimensions | Key weight |
+|--------|--------------|------------|------------|
+| `default` | General-purpose reasoning | 4: evidence, assumptions, blind spots, confidence | Equal (25% each) |
+| `security-focused` | Security posture | 5: evidence, assumptions, blind spots, threat model awareness, confidence | Blind spots at 40% |
+| `startup-velocity` | Speed and pragmatism | 5: evidence, assumptions, blind spots, reversibility assessment, confidence | Evidence at 40% |
 
-Set your team's rubric in SKILL.md:
+Set your team's rubric in SKILL.md frontmatter:
 
 ```yaml
 rubric: security-focused
 ```
 
+The skill resolves rubrics relative to the SKILL.md file location (`rubrics/[name].md` in the same directory). Falls back to `default` if the specified rubric doesn't exist.
+
 Write your own rubric for your team's values. See [docs/custom-rubrics.md](docs/custom-rubrics.md).
 
 ### Role calibration
 
-Every rubric includes guidance on how scoring adjusts by role:
+Every rubric includes a `Role calibration` section that adjusts which dimensions matter most based on who's making the decision. This varies by rubric — here's how the three shipped rubrics differ:
 
-- **CTO/Executive** — Evaluated on evidence grounding and irreversibility awareness. Strategy decisions need data, not vibes.
-- **Staff/Senior** — All dimensions weighted. Expected to surface assumptions and articulate tradeoffs explicitly.
+**Default rubric:**
+- **CTO/Executive** — Evidence specificity weighs heavier. These decisions are expensive to reverse.
+- **Staff/Senior** — All dimensions weighted equally. Expected to articulate tradeoffs explicitly.
 - **Mid-level** — Assumption awareness is the key signal. Are they aware of what they don't know?
 - **Junior** — Confidence calibration matters most. Appropriate uncertainty scores higher than false confidence.
 
-Role can be declared explicitly ("I'm a junior engineer" or `/why role junior`) or inferred from context. Explicit always wins.
+**Security-focused rubric:**
+- **CTO/Executive** — Threat model awareness is paramount. Evidence should reference compliance, not just intuition.
+- **Staff/Senior** — Blind spot severity is the primary signal. Should catch auth bypass and data exposure without prompting.
+- **Mid-level** — Rewarded for flagging security concerns to seniors rather than solving alone.
+- **Junior** — "I'm not sure if this is secure" scores higher than "this is fine."
+
+**Startup-velocity rubric:**
+- **Founder/CTO** — Evidence grounded in actual context (runway, user count, team size), not borrowed best practices. Reversibility assessment matters — founders make the hardest-to-undo choices.
+- **Staff/Senior** — Pragmatism rewarded. "This is tech debt and I'm taking it on purpose" is a high-scoring answer.
+- **Mid-level** — Are they building something that requires conditions the startup hasn't validated?
+- **Junior** — Main signal: are they shipping or blocked trying to make it perfect?
+
+Role calibration adjusts which dimensions matter most, not the overall scoring bar.
 
 ## Stats
 
-Run `why-stats.sh` to see decision analytics:
+Run `why-stats.sh` against your decisions directory:
 
 ```bash
-bash scripts/why-stats.sh decisions 30
+bash scripts/why-stats.sh .claude/skills/why/decisions 30
 ```
 
 ```
@@ -152,18 +213,28 @@ Avg health score:    6.8
 Score distribution:  ▓▓▓▓▓▓▓▓██░░ (1-3: 1, 4-7: 8, 8-10: 5)
 Top flags:           unscoped-work(6), no-evidence(3), recency-bias(2)
 Decisions this week: 3
+By role:             senior(8) mid(4) junior(2)
+
+Score by role:
+  junior: 2 decisions, avg score 5.5
+  mid: 4 decisions, avg score 6.2
+  senior: 8 decisions, avg score 7.4
 ```
 
-No dependencies. Just bash. Runs anywhere.
+The role breakdown and score-by-role sections appear when entries have role data. No dependencies — just bash + awk. Runs on macOS and Linux.
+
+Arguments: `why-stats.sh [decisions-dir] [days]`. Defaults to `decisions/` and 30 days.
 
 ## For teams
 
 See [docs/team-guide.md](docs/team-guide.md) for:
 
-- How different roles (CTO to junior) use `/why`
-- How to review each other's decision entries
+- How different roles (CTO to junior) use `/why` — when to use quick vs full mode, what the health check catches for each role
+- How to review each other's decision entries (like code review but for reasoning)
 - How to use stats in retros and standups
-- What a healthy `decisions/` folder looks like over time
+- How to choose and customize a rubric for your team
+- What a healthy `decisions/` folder looks like at 1 month, 3 months, 6 months
+- Anti-patterns to avoid
 
 ## Why this matters
 
@@ -176,9 +247,11 @@ An engineer's `decisions/` folder is a body of work that can't be faked. It show
 
 This is your audit trail. For yourself, for your team, for anyone who inherits your code and needs to know why it's shaped the way it is.
 
+**Scores are not performance metrics.** They measure reasoning quality on a single decision, not developer quality. Never use them in performance reviews. See the [team guide](docs/team-guide.md) anti-patterns section.
+
 ## Example entry
 
-See [examples/example-decision.md](examples/example-decision.md) for a complete entry showing a developer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning and health check.
+See [examples/example-decision.md](examples/example-decision.md) for a complete entry showing a senior engineer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning and health check.
 
 ## Principles
 
@@ -188,7 +261,8 @@ See [examples/example-decision.md](examples/example-decision.md) for a complete 
 - **Expand is opt-in.** Full breakdown only when you run `/why expand`.
 - **Your words, verbatim.** Answers are stored exactly as written, above the line. AI analysis lives below.
 - **Rubrics are swappable.** Scoring adapts to what your team values.
-- **Role-aware scoring.** The same rubric evaluates different roles at appropriate scope.
+- **Role-aware scoring.** Declare your role or let it be inferred. The same rubric evaluates different roles at appropriate scope.
+- **Git is the database.** Everything is markdown files in your repo. No backend, no accounts, no infra.
 
 ## Project structure
 
@@ -198,17 +272,18 @@ why/
   README.md                   # This file
   LICENSE                     # MIT
   decisions/                  # Where entries land
-  examples/                   # Example entries
+  examples/
+    example-decision.md       # Full mode entry with health check
   rubrics/
-    default.md                # General-purpose scoring
-    security-focused.md       # For security-conscious teams
-    startup-velocity.md       # For teams optimizing for speed
+    default.md                # 4 dimensions, equal weights
+    security-focused.md       # 5 dimensions, blind spots at 40%
+    startup-velocity.md       # 5 dimensions, evidence at 40%
   scripts/
-    why-stats.sh              # Decision analytics
+    why-stats.sh              # Decision analytics (bash, no deps)
     why-init.sh               # One-command installer
   docs/
-    custom-rubrics.md          # How to write your own rubric
-    team-guide.md              # How to roll /why out to a team
+    custom-rubrics.md         # How to write your own rubric
+    team-guide.md             # How to roll /why out to a team
 ```
 
 ## License

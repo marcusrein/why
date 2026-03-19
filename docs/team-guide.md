@@ -11,14 +11,7 @@ git clone https://github.com/marcusrein/why.git /tmp/why-install
 bash /tmp/why-install/scripts/why-init.sh
 ```
 
-Or curl it directly:
-
-```bash
-curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh -o /tmp/why-init.sh
-bash /tmp/why-init.sh
-```
-
-This creates `.claude/skills/why/` with the skill, default rubric, and an empty decisions directory.
+This creates `.claude/skills/why/` with the skill, all three rubrics, an empty decisions directory, an example entry, and copies `scripts/why-stats.sh` to your project root for analytics. Decisions are tracked in git by default.
 
 ## Who uses /why and how
 
@@ -83,7 +76,7 @@ This is especially valuable across experience levels. A senior reviewing a junio
 Run `why-stats.sh` weekly:
 
 ```bash
-bash scripts/why-stats.sh decisions 7
+bash scripts/why-stats.sh .claude/skills/why/decisions 7
 ```
 
 Look at:

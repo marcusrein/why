@@ -6,6 +6,8 @@ files:
   - src/auth/session.ts
   - src/auth/middleware.ts
 tags: [dependency, architecture, security]
+role: senior
+rubric: default
 mode: full
 health_score: 8
 ---
