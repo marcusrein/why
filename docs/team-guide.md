@@ -4,14 +4,15 @@ How to roll `/why` out to a team so it actually gets used.
 
 ## Install
 
-Run the installer in your project root:
-
 ```bash
-git clone https://github.com/marcusrein/why.git /tmp/why-install
-bash /tmp/why-install/scripts/why-init.sh
+git clone https://github.com/marcusrein/why.git /tmp/why
+cp -r /tmp/why/skill .claude/skills/why
+rm -rf /tmp/why
 ```
 
-This creates `.claude/skills/why/` with the skill, all three rubrics, an empty decisions directory, an example entry, and copies `scripts/why-stats.sh` to your project root for analytics. Decisions are tracked in git by default.
+This copies the skill, all three rubrics, an empty decisions directory, and an example entry into your project. Decisions are tracked in git by default.
+
+Optionally, add the CLAUDE.md snippet from the [README](../README.md#claudemd-snippet-optional) to make every Claude instance in the project decision-aware.
 
 ## Who uses /why and how
 
@@ -73,10 +74,10 @@ This is especially valuable across experience levels. A senior reviewing a junio
 
 ### In retros / standups
 
-Run `why-stats.sh` weekly:
+Run `why-stats.sh` weekly (from your clone of the why repo):
 
 ```bash
-bash scripts/why-stats.sh .claude/skills/why/decisions 7
+bash ~/tools/why/scripts/why-stats.sh .claude/skills/why/decisions 7
 ```
 
 Look at:

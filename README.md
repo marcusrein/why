@@ -32,42 +32,29 @@ Every entry gets an automatic **Reasoning Health Check** — a score from 1-10 a
 
 ## Install
 
-### One command
-
 ```bash
-git clone https://github.com/marcusrein/why.git /tmp/why-install
-bash /tmp/why-install/scripts/why-init.sh
+git clone https://github.com/marcusrein/why.git /tmp/why
+cp -r /tmp/why/skill .claude/skills/why
+rm -rf /tmp/why
 ```
 
-The installer creates this structure in your project:
+That's it. Claude Code picks up `SKILL.md` automatically from `.claude/skills/why/`.
 
+### CLAUDE.md snippet (optional)
+
+To make every Claude instance in your project decision-aware, add this to your project's `CLAUDE.md`:
+
+```markdown
+## /why — Team Decision Context
+
+When working in this project, be aware of the `decisions/` directory at `.claude/skills/why/decisions/`. It contains structured records of human technical decisions made during AI-assisted development.
+
+**Before suggesting an approach:** Check if a prior decision in `decisions/` already addressed the same system, files, or tradeoff. If so, reference it and build on it rather than re-litigating.
+
+**When a decision contradicts a prior one:** Surface it. "Note: this reverses the approach from decisions/2026-03-10-no-orm.md — is that intentional?"
+
+**Weekly digests:** Files matching `decisions/DIGEST-*.md` summarize team patterns. Read the most recent digest to understand recurring flags and team focus areas.
 ```
-your-project/
-  CLAUDE.md                    # Updated with /why team context (created if missing)
-  .claude/
-    skills/
-      why/
-        SKILL.md               # The skill Claude Code reads
-        decisions/              # Where entries land
-          .gitkeep
-        rubrics/
-          default.md            # General-purpose scoring (4 dimensions, equal weights)
-          security-focused.md   # 5 dimensions, blind spots at 40%
-          startup-velocity.md   # 5 dimensions, evidence specificity at 40%
-        examples/
-          example-decision.md
-  scripts/
-    why-stats.sh                # Decision analytics (no dependencies, just bash)
-    why-digest.sh               # Weekly team digest generator
-```
-
-The installer also adds a `/why` context block to your project's `CLAUDE.md`. This makes every Claude instance in the project decision-aware — Claude will check for prior decisions before suggesting approaches, surface contradictions, and reference the team's collective reasoning.
-
-Decisions are tracked in git by default — they're the value. The installer asks if you want to exclude them instead.
-
-### Manual install
-
-Copy the files yourself following the structure above. Claude Code picks up `SKILL.md` automatically from `.claude/skills/why/`. If installing manually, add the CLAUDE.md snippet from `scripts/why-init.sh` to make Claude instances decision-aware.
 
 ## Usage
 
@@ -202,7 +189,7 @@ When multiple team members install `/why` in the same repo, their decisions sync
 
 ### How it works
 
-1. **The installer adds context to CLAUDE.md.** Every Claude instance in the project reads this on startup. It tells Claude to check `decisions/` for prior reasoning before suggesting approaches.
+1. **Add the CLAUDE.md snippet above.** Every Claude instance in the project reads this on startup. It tells Claude to check `decisions/` for prior reasoning before suggesting approaches.
 
 2. **Decisions cross-reference automatically.** When a new decision relates to files or tags from a prior entry, the health check includes a `Related:` line linking to those entries. If a decision contradicts a prior one without acknowledgment, it gets flagged with `contradicts-prior(med)`.
 
@@ -218,10 +205,10 @@ This happens because CLAUDE.md tells every Claude instance to check `decisions/`
 
 ### Weekly digest
 
-Generate a team summary:
+Generate a team summary from your clone of the why repo:
 
 ```bash
-bash scripts/why-digest.sh .claude/skills/why/decisions
+bash ~/tools/why/scripts/why-digest.sh .claude/skills/why/decisions
 ```
 
 This creates `decisions/DIGEST-2026-W12.md` with:
@@ -238,10 +225,16 @@ Arguments: `why-digest.sh [decisions-dir] [weeks-back]`. Defaults to `decisions/
 
 ## Stats
 
-Run `why-stats.sh` against your decisions directory:
+Keep a clone of the why repo around for the analysis scripts:
 
 ```bash
-bash scripts/why-stats.sh .claude/skills/why/decisions 30
+git clone https://github.com/marcusrein/why.git ~/tools/why
+```
+
+Then run stats against your project's decisions:
+
+```bash
+bash ~/tools/why/scripts/why-stats.sh .claude/skills/why/decisions 30
 ```
 
 ```
@@ -290,7 +283,7 @@ This is your audit trail. For yourself, for your team, for anyone who inherits y
 
 ## Example entry
 
-See [examples/example-decision.md](examples/example-decision.md) for a complete entry showing a senior engineer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning and health check.
+See [skill/examples/example-decision.md](skill/examples/example-decision.md) for a complete entry showing a senior engineer who rejected a Redis-backed session store in favor of 40 lines of custom code, with reasoning and health check.
 
 ## Principles
 
@@ -308,23 +301,23 @@ See [examples/example-decision.md](examples/example-decision.md) for a complete 
 
 ```
 why/
-  SKILL.md                    # Claude Code skill definition
-  README.md                   # This file
-  LICENSE                     # MIT
-  decisions/                  # Where entries land
-  examples/
-    example-decision.md       # Full mode entry with health check
-  rubrics/
-    default.md                # 4 dimensions, equal weights
-    security-focused.md       # 5 dimensions, blind spots at 40%
-    startup-velocity.md       # 5 dimensions, evidence at 40%
+  README.md                     # This file
+  LICENSE                       # MIT
+  skill/                        # Copy this → .claude/skills/why/
+    SKILL.md                    # Claude Code skill definition
+    decisions/                  # Where entries land
+    examples/
+      example-decision.md       # Full mode entry with health check
+    rubrics/
+      default.md                # 4 dimensions, equal weights
+      security-focused.md       # 5 dimensions, blind spots at 40%
+      startup-velocity.md       # 5 dimensions, evidence at 40%
   scripts/
-    why-stats.sh              # Decision analytics (bash, no deps)
-    why-digest.sh             # Weekly team digest generator
-    why-init.sh               # One-command installer
+    why-stats.sh                # Decision analytics (bash, no deps)
+    why-digest.sh               # Weekly team digest generator
   docs/
-    custom-rubrics.md         # How to write your own rubric
-    team-guide.md             # How to roll /why out to a team
+    custom-rubrics.md           # How to write your own rubric
+    team-guide.md               # How to roll /why out to a team
 ```
 
 ## License

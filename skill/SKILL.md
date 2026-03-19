@@ -1,6 +1,6 @@
 ---
 name: why
-description: Human judgment registry. Captures reasoning behind technical decisions during AI-assisted development. Triggers on developer overrides, rejections, and architectural decisions. Includes AI reasoning health check with configurable rubrics.
+description: Human judgment registry for AI-assisted development. Records reasoning behind technical decisions with scoring and health checks. Use when the developer overrides, rejects, or redirects a suggestion, or explicitly runs /why.
 rubric: default
 auto_trigger:
   - "actually let's do"
@@ -36,35 +36,7 @@ That's it. Wait for the answer. Then save the entry with metadata and a reasonin
 
 Do NOT answer this yourself. The developer's exact words are the point.
 
-### Quick mode entry format
-
-```markdown
----
-date: YYYY-MM-DD
-time: HH:MM
-branch: [git branch or "no git context"]
-files: [list of relevant files from conversation]
-tags: [inferred from content, e.g. architecture, dependency, performance]
-role: [inferred from context: cto, staff, senior, mid, junior — or omit if unclear]
-rubric: [rubric name used for scoring]
-mode: quick
-health_score: [1-10]
----
-
-# [Decision Title]
-
-## What did you decide and why?
-[Developer's exact answer]
-
----
-## Reasoning Health Check (AI-generated)
-
-Score: [X]/10
-
-Flags: [tag(severity), tag(severity), ...]
-
-Run `/why expand` for details.
-```
+See [FORMATS.md](FORMATS.md) for the quick mode entry template.
 
 ## Full mode (`/why` invoked explicitly)
 
@@ -80,47 +52,7 @@ Do NOT answer these yourself. Do NOT paraphrase, summarize, or "help" with the a
 4. **What parts of the output did you write or override yourself?**
 5. **What would break this, and do you understand why?**
 
-### Full mode entry format
-
-```markdown
----
-date: YYYY-MM-DD
-time: HH:MM
-branch: [git branch or "no git context"]
-files: [list of relevant files from conversation]
-tags: [inferred from content, e.g. architecture, dependency, performance]
-role: [inferred from context: cto, staff, senior, mid, junior — or omit if unclear]
-rubric: [rubric name used for scoring]
-mode: full
-health_score: [1-10]
----
-
-# [Decision Title]
-
-## 1. What problem were you solving?
-[Developer's exact answer]
-
-## 2. What did Claude suggest that you rejected, and why?
-[Developer's exact answer]
-
-## 3. What did you decide and what was your reasoning?
-[Developer's exact answer]
-
-## 4. What parts of the output did you write or override yourself?
-[Developer's exact answer]
-
-## 5. What would break this, and do you understand why?
-[Developer's exact answer]
-
----
-## Reasoning Health Check (AI-generated)
-
-Score: [X]/10
-
-Flags: [tag(severity), tag(severity), ...]
-
-Run `/why expand` for details.
-```
+See [FORMATS.md](FORMATS.md) for the full mode entry template.
 
 ## Rubrics
 
@@ -159,17 +91,7 @@ Apply the rubric's role calibration if a role was inferred. This shifts which di
 
 ### Format rules
 
-The health check in the entry is exactly three lines:
-
-1. `Score: X/10`
-2. `Flags: tag(severity), tag(severity), ...`
-3. `Run /why expand for details.`
-
-Flag tags are short descriptive slugs with severity: `low`, `med`, or `high`. Examples: `recency-bias(low)`, `unscoped-work(med)`, `type-safety-gap(med)`, `no-evidence(high)`, `security-gap(high)`.
-
-If there are no flags, write `Flags: none`. Keep moving.
-
-### No flags, no scores above the line
+See [FORMATS.md](FORMATS.md) for the health check format, flag syntax, and related-decisions format.
 
 The health check lives below the `---` separator. Never mix AI analysis into the developer's answers section.
 
@@ -177,34 +99,7 @@ The health check lives below the `---` separator. Never mix AI analysis into the
 
 When the developer runs `/why expand`, find the most recent decision entry in `decisions/` and generate a full breakdown. Append it to the same file below the health check.
 
-### Expanded analysis covers
-
-- **Flag explanations** — one sentence per flag explaining what was detected and why it matters
-- **Assumptions surfaced** — implicit assumptions in the reasoning, stated explicitly
-- **Blind spots** — failure modes or considerations the developer didn't address
-- **Confidence calibration notes** — where certainty exceeded or fell short of evidence
-
-### Expanded format
-
-```markdown
-## Expanded Analysis (AI-generated)
-
-### Flag breakdown
-- **[flag-tag]([severity]):** [One sentence explanation]
-
-### Assumptions surfaced
-- [Assumption 1]
-- [Assumption 2]
-
-### Blind spots
-- [Blind spot 1]
-- [Blind spot 2]
-
-### Confidence calibration
-[1-2 sentences on how the developer's certainty matched their evidence]
-```
-
-Write this directly into the decision file, appended after the health check section.
+Expanded analysis covers: flag explanations, assumptions surfaced, blind spots, and confidence calibration notes. See [FORMATS.md](FORMATS.md) for the expanded analysis template.
 
 ## Team context
 
@@ -216,21 +111,7 @@ Before scoring a new decision, scan the `decisions/` directory for prior entries
 
 This makes every Claude instance in the project aware of the team's collective reasoning. Decisions don't happen in isolation — they build on each other.
 
-### Entry format addition
-
-When related decisions are found, add a `Related` line after the `Flags` line in the health check:
-
-```
-Score: 7/10
-
-Flags: unscoped-work(med)
-
-Related: [2026-03-10-api-contract.md], [2026-03-08-auth-middleware.md]
-
-Run `/why expand` for details.
-```
-
-If no related decisions exist, omit the `Related` line.
+See [FORMATS.md](FORMATS.md) for the related-decisions format in the health check.
 
 ## Saving entries
 
