@@ -32,18 +32,11 @@ Every entry gets an automatic **Reasoning Health Check** — a score from 1-10 a
 
 ## Install
 
-### One command (recommended)
+### One command
 
 ```bash
 git clone https://github.com/marcusrein/why.git /tmp/why-install
 bash /tmp/why-install/scripts/why-init.sh
-```
-
-Or curl the installer — it auto-clones the repo if needed:
-
-```bash
-curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh -o /tmp/why-init.sh
-bash /tmp/why-init.sh
 ```
 
 The installer creates this structure in your project:

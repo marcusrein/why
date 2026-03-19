@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # /why installer — sets up the why skill in any project
-# Run from cloned repo:  bash scripts/why-init.sh [target-dir]
-# Run standalone:         curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh | bash
-#                         or: bash /tmp/why-init.sh [target-dir]
+# Usage:
+#   git clone https://github.com/marcusrein/why.git /tmp/why-install
+#   bash /tmp/why-install/scripts/why-init.sh [target-dir]
 
 set -euo pipefail
 
@@ -10,17 +10,8 @@ TARGET="${1:-.}"
 SKILL_DIR="$TARGET/.claude/skills/why"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-CLONED_REPO=""
 
-# If SKILL.md isn't at the expected repo location, clone it
-if [ ! -f "$REPO_DIR/SKILL.md" ]; then
-  CLONED_REPO="/tmp/why-install-$$"
-  echo "Fetching /why from GitHub..."
-  git clone --quiet https://github.com/marcusrein/why.git "$CLONED_REPO" 2>&1
-  REPO_DIR="$CLONED_REPO"
-  echo ""
-fi
-
+echo ""
 echo "/why — installing into $TARGET"
 echo ""
 
@@ -33,8 +24,9 @@ if [ -f "$REPO_DIR/SKILL.md" ]; then
   cp "$REPO_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
   echo "  ✓ SKILL.md"
 else
-  echo "  ✗ SKILL.md not found — check https://github.com/marcusrein/why"
-  [ -n "$CLONED_REPO" ] && rm -rf "$CLONED_REPO"
+  echo "  ✗ SKILL.md not found in $REPO_DIR"
+  echo "  Run: git clone https://github.com/marcusrein/why.git /tmp/why-install"
+  echo "       bash /tmp/why-install/scripts/why-init.sh"
   exit 1
 fi
 
@@ -76,19 +68,7 @@ if [ -d "$REPO_DIR/examples" ]; then
   cp "$REPO_DIR/examples/"*.md "$SKILL_DIR/examples/" 2>/dev/null && echo "  ✓ examples/" || true
 fi
 
-# Ask about .gitignore — default is to TRACK decisions (they're the value)
-echo ""
-echo "  Decisions are tracked in git by default (recommended for team review)."
-read -rp "  Exclude decisions from git instead? (y/n) " ignore_choice
-if [[ "$ignore_choice" =~ ^[Yy]$ ]]; then
-  echo "" >> "$TARGET/.gitignore"
-  echo "# /why decision entries (excluded from version control)" >> "$TARGET/.gitignore"
-  echo ".claude/skills/why/decisions/*.md" >> "$TARGET/.gitignore"
-  echo "!.claude/skills/why/decisions/.gitkeep" >> "$TARGET/.gitignore"
-  echo "  ✓ Updated .gitignore — decisions excluded"
-else
-  echo "  ✓ Decisions will be tracked in git"
-fi
+  echo "  ✓ Decisions tracked in git (recommended for team review)"
 
 # Add /why context to CLAUDE.md so all Claude instances are decision-aware
 CLAUDE_MD="$TARGET/CLAUDE.md"
@@ -131,6 +111,3 @@ echo ""
 echo "Set your team's rubric in SKILL.md by changing the rubric field."
 echo "See docs/custom-rubrics.md for how to write your own."
 echo ""
-
-# Clean up temp clone if we created one
-[ -n "$CLONED_REPO" ] && rm -rf "$CLONED_REPO"
