@@ -14,7 +14,11 @@ The most valuable thing a developer does in an AI-assisted workflow isn't writin
 
 ## What it does
 
-`/why` is a Claude Code skill that creates structured records of human technical decisions. Every time you override Claude, reject an approach, or make an architectural call, `/why` walks you through five questions:
+`/why` is a Claude Code skill that creates structured records of human technical decisions. It has two modes:
+
+**Quick mode** — triggers automatically when you override Claude mid-conversation ("scratch that", "I'd rather", "instead let's..."). Asks one question: *What did you decide and why?* Low friction. Takes 10 seconds.
+
+**Full mode** — triggered explicitly with `/why`. Walks you through five questions:
 
 1. What problem were you solving?
 2. What did Claude suggest that you rejected, and why?
@@ -22,7 +26,7 @@ The most valuable thing a developer does in an AI-assisted workflow isn't writin
 4. What parts of the output did you write or override yourself?
 5. What would break this, and do you understand why?
 
-Your answers are saved as markdown files in a `/decisions` directory. Claude fills in metadata (date, branch, files). You provide the reasoning. Always.
+Both modes save structured markdown files to a `/decisions` directory. Claude fills in metadata (date, branch, files). You provide the reasoning. Always.
 
 ## Why this matters
 
@@ -77,7 +81,7 @@ The skill activates automatically when you use phrases like:
 - "scratch that"
 - "let's go with..."
 
-When Claude detects these patterns, it starts the five-question flow.
+When Claude detects these patterns, it asks a single question: *What did you decide and why?* Quick and out of the way.
 
 ### What gets created
 
@@ -99,8 +103,8 @@ See [examples/example-decision.md](examples/example-decision.md) for a complete 
 
 ## Principles
 
-- **Claude fills metadata, never answers.** The five questions are human-only.
-- **No skipping.** All five questions, every time.
+- **Claude fills metadata, never answers.** Questions are human-only.
+- **Quick is the default.** Auto-triggers ask one question. Full mode is opt-in via `/why`.
 - **No editorializing.** The skill records. It doesn't judge.
 - **Your words, verbatim.** Answers are stored exactly as written.
 
