@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # /why installer — sets up the why skill in any project
-# Run: bash why-init.sh [target-dir]
+# Run from cloned repo:  bash scripts/why-init.sh [target-dir]
+# Run standalone:         curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh | bash
+#                         or: bash /tmp/why-init.sh [target-dir]
 
 set -euo pipefail
 
@@ -8,8 +10,17 @@ TARGET="${1:-.}"
 SKILL_DIR="$TARGET/.claude/skills/why"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
+CLONED_REPO=""
 
-echo ""
+# If SKILL.md isn't at the expected repo location, clone it
+if [ ! -f "$REPO_DIR/SKILL.md" ]; then
+  CLONED_REPO="/tmp/why-install-$$"
+  echo "Fetching /why from GitHub..."
+  git clone --quiet https://github.com/marcusrein/why.git "$CLONED_REPO" 2>&1
+  REPO_DIR="$CLONED_REPO"
+  echo ""
+fi
+
 echo "/why — installing into $TARGET"
 echo ""
 
@@ -22,7 +33,8 @@ if [ -f "$REPO_DIR/SKILL.md" ]; then
   cp "$REPO_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
   echo "  ✓ SKILL.md"
 else
-  echo "  ✗ SKILL.md not found in $REPO_DIR"
+  echo "  ✗ SKILL.md not found — check https://github.com/marcusrein/why"
+  [ -n "$CLONED_REPO" ] && rm -rf "$CLONED_REPO"
   exit 1
 fi
 
@@ -119,3 +131,6 @@ echo ""
 echo "Set your team's rubric in SKILL.md by changing the rubric field."
 echo "See docs/custom-rubrics.md for how to write your own."
 echo ""
+
+# Clean up temp clone if we created one
+[ -n "$CLONED_REPO" ] && rm -rf "$CLONED_REPO"

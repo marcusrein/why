@@ -39,7 +39,7 @@ git clone https://github.com/marcusrein/why.git /tmp/why-install
 bash /tmp/why-install/scripts/why-init.sh
 ```
 
-Or curl it:
+Or curl the installer — it auto-clones the repo if needed:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/marcusrein/why/main/scripts/why-init.sh -o /tmp/why-init.sh
