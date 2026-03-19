@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# /why installer — sets up the why skill in any project
+# Run: bash why-init.sh [target-dir]
+
+set -euo pipefail
+
+TARGET="${1:-.}"
+SKILL_DIR="$TARGET/.claude/skills/why"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+
+echo ""
+echo "/why — installing into $TARGET"
+echo ""
+
+# Create directory structure
+mkdir -p "$SKILL_DIR/decisions"
+mkdir -p "$SKILL_DIR/rubrics"
+
+# Copy SKILL.md
+if [ -f "$REPO_DIR/SKILL.md" ]; then
+  cp "$REPO_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
+  echo "  ✓ SKILL.md"
+else
+  echo "  ✗ SKILL.md not found in $REPO_DIR"
+  exit 1
+fi
+
+# Copy default rubric
+if [ -f "$REPO_DIR/rubrics/default.md" ]; then
+  cp "$REPO_DIR/rubrics/default.md" "$SKILL_DIR/rubrics/default.md"
+  echo "  ✓ rubrics/default.md"
+fi
+
+# Copy additional rubrics if they exist
+for rubric in "$REPO_DIR/rubrics/"*.md; do
+  [ -f "$rubric" ] || continue
+  name=$(basename "$rubric")
+  [ "$name" = "default.md" ] && continue
+  cp "$rubric" "$SKILL_DIR/rubrics/$name"
+  echo "  ✓ rubrics/$name"
+done
+
+# Create .gitkeep in decisions
+touch "$SKILL_DIR/decisions/.gitkeep"
+echo "  ✓ decisions/"
+
+# Copy stats script
+mkdir -p "$TARGET/scripts"
+if [ -f "$REPO_DIR/scripts/why-stats.sh" ]; then
+  cp "$REPO_DIR/scripts/why-stats.sh" "$TARGET/scripts/why-stats.sh"
+  chmod +x "$TARGET/scripts/why-stats.sh"
+  echo "  ✓ scripts/why-stats.sh"
+fi
+
+# Copy example if it exists
+if [ -d "$REPO_DIR/examples" ]; then
+  mkdir -p "$SKILL_DIR/examples"
+  cp "$REPO_DIR/examples/"*.md "$SKILL_DIR/examples/" 2>/dev/null && echo "  ✓ examples/" || true
+fi
+
+# Ask about .gitignore — default is to TRACK decisions (they're the value)
+echo ""
+echo "  Decisions are tracked in git by default (recommended for team review)."
+read -rp "  Exclude decisions from git instead? (y/n) " ignore_choice
+if [[ "$ignore_choice" =~ ^[Yy]$ ]]; then
+  echo "" >> "$TARGET/.gitignore"
+  echo "# /why decision entries (excluded from version control)" >> "$TARGET/.gitignore"
+  echo ".claude/skills/why/decisions/*.md" >> "$TARGET/.gitignore"
+  echo "!.claude/skills/why/decisions/.gitkeep" >> "$TARGET/.gitignore"
+  echo "  ✓ Updated .gitignore — decisions excluded"
+else
+  echo "  ✓ Decisions will be tracked in git"
+fi
+
+echo ""
+echo "Done. Run /why in Claude Code to record your first decision."
+echo ""
+echo "Rubrics installed:"
+for rubric in "$SKILL_DIR/rubrics/"*.md; do
+  [ -f "$rubric" ] || continue
+  name=$(basename "$rubric" .md)
+  echo "  - $name"
+done
+echo ""
+echo "Set your team's rubric in SKILL.md by changing the rubric field."
+echo "See docs/custom-rubrics.md for how to write your own."
+echo ""

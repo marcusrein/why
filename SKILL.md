@@ -1,6 +1,7 @@
 ---
 name: why
-description: Human judgment registry. Captures reasoning behind technical decisions during AI-assisted development. Triggers on developer overrides, rejections, and architectural decisions. Includes AI reasoning health check.
+description: Human judgment registry. Captures reasoning behind technical decisions during AI-assisted development. Triggers on developer overrides, rejections, and architectural decisions. Includes AI reasoning health check with configurable rubrics.
+rubric: default
 auto_trigger:
   - "actually let's do"
   - "I don't want to use"
@@ -44,6 +45,8 @@ time: HH:MM
 branch: [git branch or "no git context"]
 files: [list of relevant files from conversation]
 tags: [inferred from content, e.g. architecture, dependency, performance]
+role: [inferred from context: cto, staff, senior, mid, junior — or omit if unclear]
+rubric: [rubric name used for scoring]
 mode: quick
 health_score: [1-10]
 ---
@@ -86,6 +89,8 @@ time: HH:MM
 branch: [git branch or "no git context"]
 files: [list of relevant files from conversation]
 tags: [inferred from content, e.g. architecture, dependency, performance]
+role: [inferred from context: cto, staff, senior, mid, junior — or omit if unclear]
+rubric: [rubric name used for scoring]
 mode: full
 health_score: [1-10]
 ---
@@ -117,18 +122,40 @@ Flags: [tag(severity), tag(severity), ...]
 Run `/why expand` for details.
 ```
 
+## Rubrics
+
+Scoring criteria are defined in rubric files. To resolve the active rubric:
+
+1. Read the `rubric` field from this file's frontmatter (e.g. `rubric: default`)
+2. Look for `rubrics/[name].md` in the same directory as this SKILL.md file (e.g. if SKILL.md is at `.claude/skills/why/SKILL.md`, look at `.claude/skills/why/rubrics/default.md`)
+3. If that file doesn't exist, fall back to `rubrics/default.md` in the same directory
+4. If no rubric files exist at all, use the built-in default dimensions defined in the Scoring section below
+
+## Role
+
+The `role` field in decision entries calibrates how the health check scores reasoning. It can be set two ways:
+
+1. **Explicit:** The developer declares their role by saying "I'm the CTO" or "junior engineer here" in conversation, or by running `/why role [role]` to set it for the session. Valid roles: `cto`, `staff`, `senior`, `mid`, `junior`.
+2. **Inferred:** If no role is declared, infer from context — the scope of the decision, the language used, and what's being worked on. Vendor selection or org-wide architecture suggests CTO/executive. Implementation details or library choice suggests mid-level. If still unclear, omit the field entirely.
+
+Explicit always wins over inferred. Record the role in the `role` frontmatter field.
+
+Use the role to calibrate scoring per the rubric's "Role calibration" section. This adjusts which dimensions matter most, not the overall bar.
+
 ## Reasoning Health Check
 
 After saving every decision entry (both modes), automatically generate a health check. This is appended to the entry file, below a horizontal rule, clearly separated from the developer's answers.
 
 ### Scoring (1-10)
 
-Evaluate the developer's reasoning across four dimensions and average them:
+Load the active rubric and evaluate the developer's reasoning across its dimensions, applying the specified weights. If no rubric file is found, use these defaults:
 
 - **Evidence specificity (1-10):** Are claims backed by concrete experience, data, or examples? Or vague vibes?
 - **Assumption count (1-10):** Fewer unstated assumptions = higher score. Deduct for load-bearing assumptions the developer didn't explicitly acknowledge.
 - **Blind spot severity (1-10):** Did the developer miss failure modes? Security gaps and data loss weigh heavier than ergonomic tradeoffs.
 - **Confidence calibration (1-10):** Does the developer's certainty match the evidence they provided? High certainty + no evidence = low score.
+
+Apply the rubric's role calibration if a role was inferred. This shifts which dimensions are weighted most, not the scoring scale.
 
 ### Format rules
 
